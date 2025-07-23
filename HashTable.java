@@ -102,7 +102,7 @@ public class HashTable<E extends Comparable<E>> {
      *         underlying array; false otherwise.
      */
     public boolean contains(E target) {
-        int position = Math.abs(target.hashcode()) % this.underlying.length; 
+        int position = Math.abs(target.hashCode()) % this.underlying.length; 
         Node<E> cursor = this.underlying[position]; 
 
         while (cursor != null) {
@@ -151,7 +151,7 @@ public class HashTable<E extends Comparable<E>> {
      */
 
     private void reinsert(E content) { 
-        int position = Math.abs(content.hashcode()) % this.underlying.length; 
+        int position = Math.abs(content.hashCode()) % this.underlying.length; 
         Node<E> newNode = new Node<E>(content);
 
         if (this.underlying[position] == null) { 
