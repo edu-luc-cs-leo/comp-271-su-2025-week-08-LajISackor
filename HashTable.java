@@ -56,26 +56,38 @@ public class HashTable<E extends Comparable<E>> {
      * @param content E The content of a new node, to be placed in the array.
      */
     public void add(E content) {
-        // Create the new node to add to the hashtable
-        Node<E> newNode = new Node<E>(content);
-        // Use the hashcode for the new node's contents to find where to place it in the
-        // underlying array. Use abs in case hashcode < 0.
+        // Update load factor before inserting 
+        this.loadFactor = (double) this.usage / this.underlying.length; 
+
+        // If table is too full, rehash to expand and redistribute
+        if(this.loadFactor >= LOAD_FACTOR_THRESHOLD) { 
+            rehash();
+        }
+
+        // Compute position using hashCode (non-negative)
         int position = Math.abs(content.hashCode()) % this.underlying.length;
+        Node<E> newNode = new Node<E>(content);
+
         // Check if selected position is already in use
         if (this.underlying[position] == null) {
             // Selected position not in use. Place the new node here and update the usage of
             // the underlying array.
+            // No list yet at this index, becomes the first node
             this.underlying[position] = newNode;
-            this.usage += 1;
+            this.usage++;
         } else {
             // Selected position in use. We will append its contents to the new node first,
             // then place the new node in the selected position. Effectively the new node
             // becomes the first node of the existing linked list in this position.
+
+            // Linked list exists, prepend the new node
             newNode.setNext(this.underlying[position]);
             this.underlying[position] = newNode;
         }
         // Update the number of nodes
-        this.totalNodes += 1;
+        this.totalNodes++;
+        // Recompute load factor after insertion
+        this.loadFactor = (double) this.usage / this.underlying.length; 
     } // method add
 
     /**
@@ -90,8 +102,69 @@ public class HashTable<E extends Comparable<E>> {
      *         underlying array; false otherwise.
      */
     public boolean contains(E target) {
+        int position = Math.abs(target.hashcode()) % this.underlying.length; 
+        Node<E> cursor = this.underlying[position]; 
+
+        while (cursor != null) {
+            if (cursor.getContent().equals(target)) {
+                return true;
+            }
+            cursor = cursor.getNext();
+        }
+
         return false;
     } // method contains
+
+    /**
+     * Rehashes the table by creating a new array with double the size
+     * then reinserts all elements into the new array 
+     */
+
+    private void rehash() { 
+        // Save refrence to current array 
+        Node<E>[] oldArray = this.underlying; 
+
+        // Allocates new array (double size)
+        int newSize = 2 * oldArray.length; 
+        this.underlying = new Node[newSize]; 
+
+        // Reset counters before rebuilding 
+        this.usage = 0; 
+        this.totalNodes = 0; 
+
+        // Reinsert each node from old array into the new array 
+        for (int i = 0; i < oldArray.length; i++) { 
+            Node<E> cursor = oldArray[i]; 
+            while (cursor != null) { 
+                E content = cursor.getContent(); 
+                reinsert(content); // use helper to avoid recursive rehashing 
+                cursor = cursor.getNext(); 
+            }
+        }
+    }
+
+    /**
+     * Helper method used only during rehashing to insert elements without 
+     * triggering another rehash
+     * 
+     * @param content Element to be reinserted into the new array 
+     */
+
+    private void reinsert(E content) { 
+        int position = Math.abs(content.hashcode()) % this.underlying.length; 
+        Node<E> newNode = new Node<E>(content);
+
+        if (this.underlying[position] == null) { 
+            this.underlying[position] = newNode; 
+            this.usage++; 
+        } else {
+            newNode.setNext(this.underlying[position]); 
+            this.underlying[position] = newNode; 
+        }
+
+        this.totalNodes++; 
+        
+    }
 
     /** Constants for toString */
     private static final String LINKED_LIST_HEADER = "\n[ %2d ]: ";
